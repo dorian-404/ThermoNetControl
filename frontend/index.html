@@ -33,6 +33,7 @@
           <p id="connection-status" class="status status--idle">
             Aucune connexion active
           </p>
+          <p id="last-update" class="panel__meta">Derniere releve: en attente</p>
         </div>
         <div class="actions">
           <button id="connect-button" class="button button--primary" type="button">
@@ -45,25 +46,37 @@
       </section>
 
       <section class="panel panel--grid">
-        <article class="zone-card">
+        <article class="zone-card" id="zone-1-card">
           <p class="zone-card__label">Zone 1</p>
           <strong id="zone-1-value" class="zone-card__value">--.- °C</strong>
           <span class="zone-card__state">Salon</span>
+          <span id="zone-1-status" class="zone-card__badge zone-card__badge--idle">
+            En attente
+          </span>
         </article>
-        <article class="zone-card">
+        <article class="zone-card" id="zone-2-card">
           <p class="zone-card__label">Zone 2</p>
           <strong id="zone-2-value" class="zone-card__value">--.- °C</strong>
           <span class="zone-card__state">Cuisine</span>
+          <span id="zone-2-status" class="zone-card__badge zone-card__badge--idle">
+            En attente
+          </span>
         </article>
-        <article class="zone-card">
+        <article class="zone-card" id="zone-3-card">
           <p class="zone-card__label">Zone 3</p>
           <strong id="zone-3-value" class="zone-card__value">--.- °C</strong>
           <span class="zone-card__state">Chambre</span>
+          <span id="zone-3-status" class="zone-card__badge zone-card__badge--idle">
+            En attente
+          </span>
         </article>
-        <article class="zone-card">
+        <article class="zone-card" id="zone-4-card">
           <p class="zone-card__label">Zone 4</p>
           <strong id="zone-4-value" class="zone-card__value">--.- °C</strong>
           <span class="zone-card__state">Salle technique</span>
+          <span id="zone-4-status" class="zone-card__badge zone-card__badge--idle">
+            En attente
+          </span>
         </article>
       </section>
 

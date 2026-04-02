@@ -1,7 +1,9 @@
 let serialPort;
 let serialWriter;
+let serialReaderActive = false;
 
 const statusElement = document.getElementById('connection-status');
+const lastUpdateElement = document.getElementById('last-update');
 const applyButton = document.getElementById('apply-button');
 const connectButton = document.getElementById('connect-button');
 const refreshButton = document.getElementById('refresh-button');
@@ -12,6 +14,31 @@ function setStatus(message, variant) {
   statusElement.className = `status status--${variant}`;
 }
 
+function setLastUpdate(date = new Date()) {
+  lastUpdateElement.textContent = `Derniere releve: ${date.toLocaleTimeString('fr-CA')}`;
+}
+
+function setZoneState(zone, label, variant) {
+  const badge = document.getElementById(`zone-${zone}-status`);
+  const card = document.getElementById(`zone-${zone}-card`);
+
+  if (!badge || !card) {
+    return;
+  }
+
+  badge.textContent = label;
+  badge.className = `zone-card__badge zone-card__badge--${variant}`;
+  card.classList.remove('zone-card--ok', 'zone-card--error');
+
+  if (variant === 'ok') {
+    card.classList.add('zone-card--ok');
+  }
+
+  if (variant === 'error') {
+    card.classList.add('zone-card--error');
+  }
+}
+
 function updateZoneValue(zone, value) {
   const target = document.getElementById(`zone-${zone}-value`);
 
@@ -19,7 +46,21 @@ function updateZoneValue(zone, value) {
     return;
   }
 
-  target.textContent = value === 'ERROR' ? 'Erreur capteur' : `${value} °C`;
+  if (value === 'ERROR') {
+    target.textContent = 'Erreur capteur';
+    setZoneState(zone, 'Capteur indisponible', 'error');
+    return;
+  }
+
+  const parsedValue = Number.parseFloat(value);
+
+  if (Number.isNaN(parsedValue)) {
+    return;
+  }
+
+  target.textContent = `${parsedValue.toFixed(1)} °C`;
+  setZoneState(zone, 'Mesure recue', 'ok');
+  setLastUpdate();
 }
 
 function handleSerialLine(line) {
@@ -36,6 +77,11 @@ function handleSerialLine(line) {
 }
 
 async function readSerialLoop() {
+  if (serialReaderActive) {
+    return;
+  }
+
+  serialReaderActive = true;
   const textDecoder = new TextDecoder();
   const reader = serialPort.readable.getReader();
   let buffer = '';
@@ -59,6 +105,7 @@ async function readSerialLoop() {
     console.error(error);
     setStatus('Lecture serie interrompue', 'error');
   } finally {
+    serialReaderActive = false;
     reader.releaseLock();
   }
 }
@@ -86,7 +133,9 @@ async function connectToArduino() {
     serialWriter = serialPort.writable.getWriter();
 
     setStatus('Arduino connecte', 'connected');
+    setLastUpdate(new Date());
     readSerialLoop();
+    await sendCommand('READ_NOW');
   } catch (error) {
     console.error(error);
     setStatus('Connexion impossible', 'error');
