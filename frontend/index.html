@@ -1,75 +1,95 @@
-<!--
-    Auteurs: Yannis, Dorian
-    Date-debut: 19/05/2023
-    Date-fin: ...
--->
-
 <!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ThermoNetControl</title>
+    <link rel="icon" type="image/png" href="assets/THERMO.png" />
+    <link rel="stylesheet" href="css/style.css" type="text/css" />
+    <script src="js/app.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div class="hero__copy">
+          <p class="eyebrow">ThermoNetControl</p>
+          <h1>Pilotage clair pour un chauffage multi-zones.</h1>
+          <p class="hero__text">
+            Interface simplifiee pour connecter l'Arduino, suivre les temperatures
+            et preparer le controle des zones de chauffage.
+          </p>
+        </div>
+        <img
+          class="hero__logo"
+          src="assets/logoTNC-removebg-preview.png"
+          alt="Logo ThermoNetControl"
+        />
+      </section>
 
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="css/style.css" type="text/css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-        <link rel="icon" type="image/png" href="assets/THERMO.png">
-        <script src="js/app.js"></script>
-        <title>ThemoNetControl</title>
-    </head>
+      <section class="panel panel--actions">
+        <div>
+          <p class="panel__label">Connexion serie</p>
+          <h2>Arduino</h2>
+          <p id="connection-status" class="status status--idle">
+            Aucune connexion active
+          </p>
+        </div>
+        <div class="actions">
+          <button id="connect-button" class="button button--primary" type="button">
+            Connecter l'Arduino
+          </button>
+          <button id="refresh-button" class="button button--ghost" type="button">
+            Lire maintenant
+          </button>
+        </div>
+      </section>
 
-    <body>
+      <section class="panel panel--grid">
+        <article class="zone-card">
+          <p class="zone-card__label">Zone 1</p>
+          <strong id="zone-1-value" class="zone-card__value">--.- °C</strong>
+          <span class="zone-card__state">Salon</span>
+        </article>
+        <article class="zone-card">
+          <p class="zone-card__label">Zone 2</p>
+          <strong id="zone-2-value" class="zone-card__value">--.- °C</strong>
+          <span class="zone-card__state">Cuisine</span>
+        </article>
+        <article class="zone-card">
+          <p class="zone-card__label">Zone 3</p>
+          <strong id="zone-3-value" class="zone-card__value">--.- °C</strong>
+          <span class="zone-card__state">Chambre</span>
+        </article>
+        <article class="zone-card">
+          <p class="zone-card__label">Zone 4</p>
+          <strong id="zone-4-value" class="zone-card__value">--.- °C</strong>
+          <span class="zone-card__state">Salle technique</span>
+        </article>
+      </section>
 
-        <div class="boite">
-
-            <a href="index.html" class="logo"><img src="assets/logoTNC-removebg-preview.png" alt="Logo T.N.C"></a>
-            
-            <button id="bouton-allumer" onclick="connectToArduino()">allumer</button>
-            <button id="bouton-eteindre">eteindre</button>
-            
-
-            <div  class="cadran">
-                <div class="point-central"></div>
-                <div class="cache-centre-cadran"></div>
-                <div class="cache-pied-cadran"></div>
-                <div class="boite-aiguille-cadran">
-                    <div class="cache-aiguille-cadran rotation-aiguille-0">
-                        <div class="aiguille-cadran"></div> 
-                    </div>
-                </div>
-                <div class="graduation-cadran graduation-cadran-12"></div>
-                <div class="graduation-cadran graduation-cadran-13"></div>
-                <div class="graduation-cadran graduation-cadran-14"></div>
-                <div class="graduation-cadran graduation-cadran-15"></div>
-                <div class="graduation-cadran graduation-cadran-16"></div>
-                <div class="graduation-cadran graduation-cadran-17"></div>
-                <div class="graduation-cadran graduation-cadran-18"></div>
-                <div class="graduation-cadran graduation-cadran-19"></div>
-                <div class="graduation-cadran graduation-cadran-20"></div>
-                <div class="graduation-cadran graduation-cadran-21"></div>
-                <div class="graduation-cadran graduation-cadran-22"></div>
-                <div class="graduation-cadran graduation-cadran-23"></div>
-                <div class="graduation-cadran graduation-cadran-24"></div>
-                <div class="graduation-cadran graduation-cadran-25"></div>
-                <div class="graduation-cadran graduation-cadran-26"></div>
-                <div class="graduation-cadran graduation-cadran-27"></div>
-                <div class="graduation-cadran graduation-cadran-28"></div> 
-                <div class="graduation-cadran graduation-cadran-29"></div>
-                <div class="graduation-cadran graduation-cadran-30"></div>
-
-                <br><br><br><br><br><br>
-                <br><br><br><br><br><br>
-                <br><br><br><br><br><br>   
-                
-                <label for="temperature" size="5cm">T&deg;C :</label><br> 
-                <input type="number" id="temperature" maxlength="4" placeholder="0&deg;C" min="12" max="30">
-
-                <button id="boutonValider">Appliquer</button>
-                
-                <div class="visuel-humidite"></div>
-            </div>
-             
-        </div>     
-
-    </body>
+      <section class="panel panel--controls">
+        <div>
+          <p class="panel__label">Commande chauffage</p>
+          <h2>Consigne manuelle</h2>
+        </div>
+        <div class="controls">
+          <label class="input-group" for="temperature">
+            <span>Temperature cible</span>
+            <input
+              type="number"
+              id="temperature"
+              name="temperature"
+              min="12"
+              max="30"
+              step="0.5"
+              placeholder="Ex. 21.5"
+            />
+          </label>
+          <button id="apply-button" class="button button--accent" type="button">
+            Appliquer
+          </button>
+        </div>
+      </section>
+    </main>
+  </body>
 </html>
