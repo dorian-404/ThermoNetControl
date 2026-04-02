@@ -1,54 +1,43 @@
 # ThermoNetControl
 
-ThermoNetControl est un projet de supervision et de pilotage de chauffage multi-zones.
-L'objectif est de lire des temperatures depuis un Arduino, de les afficher dans une interface web,
-puis de les faire remonter vers une API backend avant d'activer la commande des zones de chauffage.
+ThermoNetControl est un projet de supervision de chauffage multi-zones base sur Arduino, avec une interface web et une petite API Node.js.
 
-## Apercu du projet
+Le projet lit les temperatures de 4 zones, les affiche dans une interface front, puis les synchronise vers un backend Express qui conserve les dernieres mesures en memoire.
 
-Le projet est compose de trois parties principales :
+## Objectif du projet
 
-- `arduino/` : lecture des capteurs `DHT11` et emission des releves sur le port serie
-- `frontend/` : interface web de suivi des zones et connexion a l'Arduino via Web Serial
-- `backend/` : API Express qui recoit et conserve les derniers releves par zone
+Le depot sert de base pour un systeme de chauffage domestique capable de :
 
-Aujourd'hui, le flux deja en place est le suivant :
+- lire la temperature de plusieurs zones
+- visualiser les releves dans une interface web
+- centraliser les mesures dans une API backend
+- preparer un futur pilotage des sorties chauffage zone par zone
 
-1. l'Arduino lit les temperatures de 4 zones
-2. le frontend affiche les releves en direct
-3. le frontend envoie ces releves au backend
-4. le backend conserve la derniere valeur connue pour chaque zone
+Aujourd'hui, la lecture des capteurs et la remontee des temperatures sont en place. Le pilotage reel du chauffage est seulement prepare dans le code Arduino.
 
-## Fonctionnalites actuelles
+## Architecture
 
-- lecture de 4 capteurs `DHT11` cote Arduino
-- emission serie des releves sous la forme `ZONE_1:23.0`
-- interface web simplifiee pour suivre les 4 zones
-- connexion a l'Arduino depuis le navigateur avec Web Serial
-- synchronisation des temperatures du frontend vers l'API backend
-- endpoint backend pour recuperer les dernieres temperatures par zone
-
-## Structure du projet
+Le projet est organise en 3 blocs :
 
 ```text
 ThermoNetControl/
 ├── arduino/
 │   └── chauffage.ino
 ├── backend/
-│   ├── src/
-│   │   ├── routes/
-│   │   │   └── temperature.routes.js
-│   │   ├── controllers/
-│   │   │   └── temperature.controller.js
-│   │   ├── services/
-│   │   │   └── temperature.service.js
-│   │   ├── models/
-│   │   │   └── temperature.model.js
-│   │   ├── config/
-│   │   │   └── config.js
-│   │   ├── app.js
-│   │   └── server.js
-│   └── package.json
+│   ├── package.json
+│   └── src/
+│       ├── app.js
+│       ├── server.js
+│       ├── config/
+│       │   └── config.js
+│       ├── controllers/
+│       │   └── temperature.controller.js
+│       ├── models/
+│       │   └── temperature.model.js
+│       ├── routes/
+│       │   └── temperature.routes.js
+│       └── services/
+│           └── temperature.service.js
 ├── frontend/
 │   ├── index.html
 │   ├── css/
@@ -56,28 +45,62 @@ ThermoNetControl/
 │   ├── js/
 │   │   └── app.js
 │   └── assets/
-├── LICENSE
-├── README.md
-└── .gitignore
+└── README.md
 ```
 
-## Technologies utilisees
+## Fonctionnement
 
-- Arduino / C++
-- JavaScript
+### Arduino
+
+Le sketch `arduino/chauffage.ino` :
+
+- lit 4 capteurs `DHT11`
+- envoie les temperatures sur le port serie au format `ZONE_n:valeur`
+- renvoie `ZONE_n:ERROR` si la lecture est invalide
+- accepte la commande serie `READ_NOW`
+- prepare aussi les commandes `HEATER_ON:n` et `HEATER_OFF:n`
+
+Configuration actuelle :
+
+- `ZONE_COUNT = 4`
+- broches capteurs : `A0`, `A1`, `A2`, `A3`
+- broches chauffage : `2`, `3`, `4`, `5`
+- vitesse serie : `9600`
+- intervalle de lecture automatique : `3000 ms`
+
+### Frontend
+
+Le frontend est une page statique qui :
+
+- se connecte a l'Arduino via la Web Serial API
+- affiche les temperatures des 4 zones
+- met a jour l'etat de chaque capteur
+- envoie chaque mesure valide au backend
+- permet de demander une lecture immediate avec le bouton `Lire maintenant`
+
+Important :
+
+- la Web Serial API n'est pas disponible dans tous les navigateurs
+- le frontend pointe actuellement vers `http://localhost:3000/api/temperatures`
+- la section `Consigne manuelle` met seulement a jour l'etat de l'interface, elle ne pilote pas encore le chauffage reel
+
+### Backend
+
+Le backend Express expose une API simple :
+
+- `GET /api/temperatures`
+- `POST /api/temperatures`
+
+Les donnees sont stockees en memoire dans `backend/src/models/temperature.model.js`, donc elles sont perdues au redemarrage du serveur.
+
+## Pre-requis
+
 - Node.js
-- Express
-- HTML / CSS
-- capteurs `DHT11`
-- Web Serial API
-
-## Materiel prevu
-
-- 1 carte Arduino
+- npm
+- un navigateur compatible Web Serial
+- Arduino IDE
+- librairie Arduino `DHT`
 - 4 capteurs `DHT11`
-- 4 sorties de commande pour les zones de chauffage
-- modules de puissance adaptes a la commande du chauffage
-- alimentation et cablage du montage
 
 ## Installation
 
@@ -101,7 +124,17 @@ npm install
 npm start
 ```
 
-Par defaut, l'API demarre sur `http://localhost:3000`.
+Le serveur demarre par defaut sur :
+
+```text
+http://localhost:3000
+```
+
+Vous pouvez aussi changer le port :
+
+```bash
+PORT=4000 npm start
+```
 
 ### 4. Lancer le frontend
 
@@ -111,50 +144,93 @@ Depuis la racine du projet :
 python3 -m http.server 4173 --directory frontend
 ```
 
-Le frontend sera alors accessible sur `http://localhost:4173`.
+Puis ouvrir :
+
+```text
+http://localhost:4173
+```
 
 ### 5. Televerser le code Arduino
 
-Ouvrir [arduino/chauffage.ino](/Users/mishaelwontcheu/Documents/New%20project/arduino/chauffage.ino) dans l'IDE Arduino, puis :
+Dans l'IDE Arduino :
 
-- installer la librairie `DHT`
-- verifier les broches utilisees
-- televerser le sketch sur la carte
+1. ouvrir `arduino/chauffage.ino`
+2. installer la librairie `DHT`
+3. verifier les broches utilisees
+4. televerser le sketch sur la carte
 
 ## Utilisation
 
 1. demarrer le backend
-2. ouvrir le frontend dans le navigateur
-3. connecter l'Arduino au PC
+2. lancer le frontend dans le navigateur
+3. brancher l'Arduino en USB
 4. cliquer sur `Connecter l'Arduino`
-5. selectionner le port serie de la carte
-6. verifier que les 4 zones commencent a afficher des temperatures
+5. choisir le port serie de la carte
+6. verifier l'arrivee des releves dans les cartes de zone
 
-Le frontend envoie automatiquement une commande `READ_NOW` apres la connexion pour demander un premier releve.
+Au moment de la connexion, le frontend envoie automatiquement la commande `READ_NOW` pour demander une mesure immediate.
 
-## API disponible
+## Format des messages serie
+
+### Messages emis par l'Arduino
+
+```text
+ZONE_1:22.5
+ZONE_2:23.0
+ZONE_3:ERROR
+ZONE_4:21.8
+```
+
+### Commandes acceptees par l'Arduino
+
+```text
+READ_NOW
+HEATER_ON:1
+HEATER_OFF:1
+```
+
+## API
 
 ### `GET /api/temperatures`
 
-Retourne les dernieres temperatures connues par zone.
+Retourne la derniere lecture globale ainsi que la derniere valeur connue pour chaque zone.
 
-Exemple de reponse :
+Exemple de reponse avec donnees :
 
 ```json
 {
   "lastReadingAt": "2026-04-02T12:00:00.000Z",
   "zones": [
-    { "id": 1, "zone": 1, "value": 23, "createdAt": "2026-04-02T12:00:00.000Z" },
-    { "id": 2, "zone": 2, "value": 22, "createdAt": "2026-04-02T12:00:01.000Z" }
+    {
+      "id": 1,
+      "zone": 1,
+      "value": 23,
+      "createdAt": "2026-04-02T12:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "zone": 2,
+      "value": 22.5,
+      "createdAt": "2026-04-02T12:00:03.000Z"
+    }
   ]
+}
+```
+
+Exemple si aucune mesure n'a encore ete recue :
+
+```json
+{
+  "message": "Aucune temperature enregistree pour le moment.",
+  "zones": []
 }
 ```
 
 ### `POST /api/temperatures`
 
-Enregistre un releve venant du frontend.
+Enregistre une mesure.
 
-Exemple de payload :
+Exemple de requete :
 
 ```json
 {
@@ -163,36 +239,50 @@ Exemple de payload :
 }
 ```
 
-## Etat actuel du projet
+Exemple de reponse :
 
-### Ce qui fonctionne deja
+```json
+{
+  "id": 1,
+  "zone": 1,
+  "value": 23.5,
+  "createdAt": "2026-04-02T12:00:00.000Z"
+}
+```
 
-- lecture multi-zones cote Arduino
-- affichage temps reel dans le frontend
-- remontée des releves vers le backend
-- organisation du projet en couches claires
+Regles de validation :
 
-### Ce qui reste a faire
+- `zone` est obligatoire
+- `zone` doit etre un entier positif
+- `value` est obligatoire
+- `value` doit etre un nombre valide
 
-- persistance en base de donnees
-- pilotage reel des sorties chauffage depuis l'interface
-- logique de consigne et d'automatisation par zone
-- validation complete du montage materiel
+## Limites actuelles
 
-## Points de vigilance
+- les donnees backend ne sont pas persistantes
+- aucun systeme d'authentification n'est present
+- le frontend suppose que l'API tourne sur `localhost:3000`
+- la consigne manuelle n'est pas encore reliee a une logique de chauffage
+- le pilotage des sorties chauffage existe cote Arduino, mais pas encore dans le frontend
 
-- les donnees backend sont actuellement conservees en memoire seulement
-- un redemarrage du serveur efface les releves
-- la commande de chauffage ne doit pas etre activee sans validation electrique serieuse
-- toute partie en `120V AC` doit etre isolee et securisee avec du materiel adapte
+## Pistes d'amelioration
 
-## Feuille de route conseillee
+- ajouter une base de donnees
+- historiser les mesures
+- permettre le pilotage des relais depuis l'interface
+- ajouter des consignes par zone
+- ajouter des tests backend
+- gerer une configuration front/backend par environnement
 
-1. fiabiliser la lecture des 4 zones
-2. conserver les releves dans une vraie base
-3. ajouter la commande chauffage zone par zone
-4. ajouter les protections et validations materiel
+## Securite
 
-## Auteurs
+Si ce projet doit piloter un chauffage reel :
 
-Projet realise autour du travail de Dorian et Yannis, puis restructure et documente progressivement pour une mise en propre du depot.
+- ne pas connecter directement des charges dangereuses sans materiel adapte
+- utiliser des relais ou modules de puissance dimensionnes correctement
+- isoler toute partie secteur
+- faire valider le montage electrique avant mise en service
+
+## Licence
+
+Ce projet est distribue sous licence `MIT`. Voir le fichier `LICENSE`.
