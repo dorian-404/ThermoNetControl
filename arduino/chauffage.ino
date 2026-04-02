@@ -44,6 +44,7 @@ void readAllTemperatures() {
   for (int index = 0; index < ZONE_COUNT; index++) {
     float temperature = dhtSensors[index]->readTemperature();
 
+    // On ne remplace pas la derniere valeur connue si le capteur renvoie une lecture invalide.
     if (!isnan(temperature)) {
       lastTemperatures[index] = temperature;
     }
@@ -108,6 +109,7 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
+  // Envoi periodique pour que l'interface reste a jour meme sans action manuelle.
   if (now - lastReadAt >= READ_INTERVAL_MS) {
     lastReadAt = now;
     readAllTemperatures();

@@ -12,6 +12,7 @@ async function getLatestTemperature() {
   }
 
   return {
+    // On renvoie la derniere lecture globale, ainsi que la derniere valeur connue pour chaque zone.
     lastReadingAt: latest.createdAt,
     zones: latestByZone,
   };

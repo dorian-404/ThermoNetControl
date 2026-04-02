@@ -8,6 +8,7 @@ function getLatestByZone() {
   const latestByZone = new Map();
 
   for (const entry of temperatures) {
+    // En reecrivant la meme cle, on conserve naturellement la derniere mesure vue pour chaque zone.
     latestByZone.set(entry.zone, entry);
   }
 

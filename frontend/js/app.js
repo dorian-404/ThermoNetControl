@@ -21,6 +21,7 @@ function setLastUpdate(date = new Date()) {
 
 async function syncTemperatureWithBackend(zone, value) {
   try {
+    // Chaque releve valide est envoye au backend pour garder une trace cote API.
     const response = await fetch(apiBaseUrl, {
       method: 'POST',
       headers: {
@@ -91,6 +92,7 @@ async function handleSerialLine(line) {
     return;
   }
 
+  // Le format attendu depuis l'Arduino est "ZONE_n:valeur".
   const [zoneLabel, value] = trimmed.split(':');
   const zone = zoneLabel.replace('ZONE_', '');
 
@@ -117,6 +119,7 @@ async function readSerialLoop() {
 
       buffer += textDecoder.decode(value, { stream: true });
 
+      // On garde la derniere ligne incomplete dans le buffer jusqu'au prochain paquet serie.
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
 
