@@ -1,6 +1,7 @@
 let serialPort;
 let serialWriter;
 let serialReaderActive = false;
+const apiBaseUrl = 'http://localhost:3000/api/temperatures';
 
 const statusElement = document.getElementById('connection-status');
 const lastUpdateElement = document.getElementById('last-update');
@@ -16,6 +17,25 @@ function setStatus(message, variant) {
 
 function setLastUpdate(date = new Date()) {
   lastUpdateElement.textContent = `Derniere releve: ${date.toLocaleTimeString('fr-CA')}`;
+}
+
+async function syncTemperatureWithBackend(zone, value) {
+  try {
+    const response = await fetch(apiBaseUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ zone, value }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur backend ${response.status}`);
+    }
+  } catch (error) {
+    console.error(error);
+    setStatus('Arduino connecte, mais synchro backend indisponible', 'error');
+  }
 }
 
 function setZoneState(zone, label, variant) {
@@ -39,7 +59,7 @@ function setZoneState(zone, label, variant) {
   }
 }
 
-function updateZoneValue(zone, value) {
+async function updateZoneValue(zone, value) {
   const target = document.getElementById(`zone-${zone}-value`);
 
   if (!target) {
@@ -61,9 +81,10 @@ function updateZoneValue(zone, value) {
   target.textContent = `${parsedValue.toFixed(1)} °C`;
   setZoneState(zone, 'Mesure recue', 'ok');
   setLastUpdate();
+  await syncTemperatureWithBackend(zone, parsedValue);
 }
 
-function handleSerialLine(line) {
+async function handleSerialLine(line) {
   const trimmed = line.trim();
 
   if (!trimmed.startsWith('ZONE_')) {
@@ -73,7 +94,7 @@ function handleSerialLine(line) {
   const [zoneLabel, value] = trimmed.split(':');
   const zone = zoneLabel.replace('ZONE_', '');
 
-  updateZoneValue(zone, value);
+  await updateZoneValue(zone, value);
 }
 
 async function readSerialLoop() {
@@ -99,7 +120,9 @@ async function readSerialLoop() {
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
 
-      lines.forEach(handleSerialLine);
+      for (const line of lines) {
+        await handleSerialLine(line);
+      }
     }
   } catch (error) {
     console.error(error);
